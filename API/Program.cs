@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 builder.Services.AddDbContext<StoreContext>(opt =>
 {
@@ -13,13 +12,11 @@ builder.Services.AddDbContext<StoreContext>(opt =>
 });
 
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped(typeof(IGenericRepository<>),typeof(GenericRepository<>));
-
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-
 app.MapControllers();
 
 try
@@ -27,11 +24,44 @@ try
     using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<StoreContext>();
-    await context.Database.MigrateAsync();
-    await StoreContextSeed.SeedAsync(context);
+
+    // Retry logic for database migration and seeding
+    var maxRetries = 10;
+    var retryDelay = TimeSpan.FromSeconds(5);
+    var retries = 0;
+    var dbReady = false;
+
+    while (!dbReady && retries < maxRetries)
+    {
+        try
+        {
+            Console.WriteLine("Attempting to apply migrations...");
+            await context.Database.MigrateAsync();
+            Console.WriteLine("Migrations applied successfully!");
+
+            Console.WriteLine("Seeding database...");
+            await StoreContextSeed.SeedAsync(context);
+            Console.WriteLine("Database seeded successfully!");
+            dbReady = true;
+        }
+        catch (Exception ex)
+        {
+            retries++;
+            Console.WriteLine($"Database not ready. Retrying in {retryDelay.TotalSeconds} seconds... ({retries}/{maxRetries})");
+            Console.WriteLine($"Error: {ex.Message}");
+
+            if (retries >= maxRetries)
+            {
+                throw new Exception("Failed to connect to the database after multiple retries.", ex);
+            }
+
+            await Task.Delay(retryDelay);
+        }
+    }
 }
-catch (System.Exception ex){
-    
+catch (Exception ex)
+{
+    Console.WriteLine("Application failed to start due to database issues:");
     Console.WriteLine(ex);
     throw;
 }

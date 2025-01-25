@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-
+  <Target Name="StartDocker" BeforeTargets="Run">
+    <Exec Command="docker-compose up -d" />
+  </Target>
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+  
 
 
   <ItemGroup>
