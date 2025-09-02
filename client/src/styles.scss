@@ -35,5 +35,24 @@ button.match-input-height{
     border-right-style:none !important
 }
 
+.snack-error{
+    @include mat.snack-bar-overrides((
+        button-color:white,  // Override the button color,
+        container-color: red, // Override the background color
+        supporting-text-color: white, // Override the supporting text color
+    )
+       
+    );
+}
+
+.snack-success{
+    @include mat.snack-bar-overrides((
+        button-color:white,  // Override the button color,
+        container-color: green, // Override the background color
+        supporting-text-color: white, // Override the supporting text color
+    )
+       
+    );
+}
 
 
